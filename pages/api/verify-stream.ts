@@ -15,6 +15,9 @@ export const config = {
 
 type StatusCallback = (message: string) => void;
 
+// Helper function to replace waitForTimeout
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Smart scrolling with status updates
 async function intelligentScrollAndExpand(page: any, sendStatus: StatusCallback) {
   sendStatus('📜 Performing intelligent scrolling to reveal all content...');
@@ -30,7 +33,7 @@ async function intelligentScrollAndExpand(page: any, sendStatus: StatusCallback)
   sendStatus(`📏 Final page height: ${finalHeight}px (expanded by ${finalHeight - initialHeight}px)`);
   
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(1000);
+  await delay(1000);
 }
 
 async function expandCollapsibleContent(page: any, sendStatus: StatusCallback) {
@@ -62,7 +65,7 @@ async function expandCollapsibleContent(page: any, sendStatus: StatusCallback) {
           const isVisible = await element.isIntersectingViewport();
           if (isVisible) {
             await element.click();
-            await page.waitForTimeout(800);
+            await delay(800);
             expandedCount++;
           }
         } catch (error) {
@@ -91,7 +94,7 @@ async function systematicPageScroll(page: any, sendStatus: StatusCallback) {
   
   while (currentPosition < pageHeight) {
     await page.evaluate((pos: number) => window.scrollTo(0, pos), currentPosition);
-    await page.waitForTimeout(1200);
+    await delay(1200);
     scrollCount++;
     
     const newHeight = await page.evaluate(() => document.body.scrollHeight);
@@ -116,7 +119,7 @@ async function systematicPageScroll(page: any, sendStatus: StatusCallback) {
   }
   
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.waitForTimeout(2000);
+  await delay(2000);
   
   sendStatus(`✅ Systematic scroll complete: ${scrollCount} scrolls`);
 }
@@ -145,7 +148,7 @@ async function handleDynamicContentLoading(page: any, sendStatus: StatusCallback
           const isVisible = await button.isIntersectingViewport();
           if (isVisible) {
             await button.click();
-            await page.waitForTimeout(2500);
+            await delay(2500);
             totalClicks++;
           }
         } catch (error) {
@@ -161,7 +164,7 @@ async function handleDynamicContentLoading(page: any, sendStatus: StatusCallback
   
   for (let i = 0; i < 1; i++) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(2000);
+    await delay(2000);
     
     const newHeight = await page.evaluate(() => document.body.scrollHeight);
     if (newHeight > previousHeight) {
@@ -228,9 +231,12 @@ export default async function handler(
     sendStatus('🚀 Launching browser...');
     
     const isDev = process.env.NODE_ENV === 'development';
-    let executablePath = await chromium.executablePath();
+    
+    let executablePath: string;
+    let browserArgs: string[];
     
     if (isDev) {
+      // Local development - use local Chrome
       const localChromePaths = [
         '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -239,21 +245,34 @@ export default async function handler(
       ];
       
       const fs = require('fs');
+      executablePath = await chromium.executablePath();
       for (const path of localChromePaths) {
         if (fs.existsSync(path)) {
           executablePath = path;
           break;
         }
       }
+      browserArgs = ['--no-sandbox', '--disable-setuid-sandbox'];
+    } else {
+      // Production - use @sparticuz/chromium
+      executablePath = await chromium.executablePath('/tmp/chromium');
+      browserArgs = [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote',
+      ];
     }
     
     browser = await puppeteer.launch({
-      args: isDev 
-        ? ['--no-sandbox', '--disable-setuid-sandbox']
-        : [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+      args: browserArgs,
       defaultViewport: { width: 1366, height: 768 },
       executablePath,
       headless: true,
+      ignoreHTTPSErrors: true,
     });
 
     const page = await browser.newPage();
@@ -265,13 +284,13 @@ export default async function handler(
       timeout: 30000 
     });
     
-    await page.waitForTimeout(2000);
+    await delay(2000);
 
     await intelligentScrollAndExpand(page, sendStatus);
 
     sendStatus('📸 Capturing full-page screenshot...');
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.waitForTimeout(1000);
+    await delay(1000);
     
     const screenshotBuffer = await page.screenshot({ 
       fullPage: true,

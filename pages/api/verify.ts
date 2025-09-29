@@ -32,6 +32,9 @@ function sendSSE(res: any, event: string, data: any) {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
+// Helper function to replace waitForTimeout
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Smart scrolling functionality from class_schedule_extractor.py
 async function intelligentScrollAndExpand(page: any) {
   console.log('📜 Performing intelligent scrolling to reveal all content...');
@@ -54,7 +57,7 @@ async function intelligentScrollAndExpand(page: any) {
   console.log(`📏 Final page height: ${finalHeight}px (expanded by ${finalHeight - initialHeight}px)`);
   
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(1000);
+  await delay(1000);
 }
 
 async function expandCollapsibleContent(page: any) {
@@ -91,7 +94,7 @@ async function expandCollapsibleContent(page: any) {
           const isVisible = await element.isIntersectingViewport();
           if (isVisible) {
             await element.click();
-            await page.waitForTimeout(800);
+            await delay(800);
             expandedCount++;
           }
         } catch (error) {
@@ -120,7 +123,7 @@ async function systematicPageScroll(page: any) {
   
   while (currentPosition < pageHeight) {
     await page.evaluate((pos: number) => window.scrollTo(0, pos), currentPosition);
-    await page.waitForTimeout(1200);
+    await delay(1200);
     scrollCount++;
     
     // Check if new content loaded
@@ -148,7 +151,7 @@ async function systematicPageScroll(page: any) {
   
   // Final scroll to bottom
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.waitForTimeout(2000);
+  await delay(2000);
   
   console.log(`✅ Systematic scroll complete: ${scrollCount} scrolls`);
 }
@@ -177,7 +180,7 @@ async function handleDynamicContentLoading(page: any) {
           const isVisible = await button.isIntersectingViewport();
           if (isVisible) {
             await button.click();
-            await page.waitForTimeout(2500);
+            await delay(2500);
             totalClicks++;
           }
         } catch (error) {
@@ -194,7 +197,7 @@ async function handleDynamicContentLoading(page: any) {
   
   for (let i = 0; i < 1; i++) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(2000);
+    await delay(2000);
     
     const newHeight = await page.evaluate(() => document.body.scrollHeight);
     if (newHeight > previousHeight) {
@@ -262,36 +265,49 @@ export default async function handler(
     // Launch browser
     console.log('🚀 Launching browser...');
     
-    // For local development, use local Chrome; for production, use chromium
     const isDev = process.env.NODE_ENV === 'development';
     
-    // Try to find local Chrome for development
-    let executablePath = await chromium.executablePath();
+    let executablePath: string;
+    let browserArgs: string[];
+    
     if (isDev) {
+      // Local development - use local Chrome
       const localChromePaths = [
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // macOS
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // Windows
-        '/usr/bin/google-chrome', // Linux
-        '/usr/bin/chromium-browser', // Linux alternative
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium-browser',
       ];
       
-      // Use chromium path if available, otherwise try local Chrome
       const fs = require('fs');
+      executablePath = await chromium.executablePath();
       for (const path of localChromePaths) {
         if (fs.existsSync(path)) {
           executablePath = path;
           break;
         }
       }
+      browserArgs = ['--no-sandbox', '--disable-setuid-sandbox'];
+    } else {
+      // Production - use @sparticuz/chromium
+      executablePath = await chromium.executablePath('/tmp/chromium');
+      browserArgs = [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--single-process',
+        '--no-zygote',
+      ];
     }
     
     browser = await puppeteer.launch({
-      args: isDev 
-        ? ['--no-sandbox', '--disable-setuid-sandbox']
-        : [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+      args: browserArgs,
       defaultViewport: { width: 1366, height: 768 },
       executablePath,
       headless: true,
+      ignoreHTTPSErrors: true,
     });
 
     const page = await browser.newPage();
@@ -306,7 +322,7 @@ export default async function handler(
       timeout: 30000 
     });
     
-    await page.waitForTimeout(2000);
+    await delay(2000);
 
     // Perform intelligent scrolling and content expansion
     await intelligentScrollAndExpand(page);
@@ -314,7 +330,7 @@ export default async function handler(
     // Take full-page screenshot
     console.log('📸 Capturing full-page screenshot...');
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.waitForTimeout(1000);
+    await delay(1000);
     
     const screenshotBuffer = await page.screenshot({ 
       fullPage: true,
