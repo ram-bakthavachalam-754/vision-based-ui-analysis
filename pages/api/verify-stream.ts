@@ -277,24 +277,29 @@ export default async function handler(
 
     const page = await browser.newPage();
     
-    // Set realistic user agent
-    await page.setUserAgent(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    );
+    // Add stealth features to improve compatibility with websites
+    // Note: Only use on websites you own or have permission to test
+    const useStealthMode = true; // Set to false to disable
     
-    // Add extra headers to appear more like a real browser
-    await page.setExtraHTTPHeaders({
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Upgrade-Insecure-Requests': '1',
-    });
-    
-    // Add stealth scripts to avoid detection
-    await page.evaluateOnNewDocument(() => {
+    if (useStealthMode) {
+      // Set realistic user agent
+      await page.setUserAgent(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      );
+      
+      // Add extra headers to appear more like a real browser
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
+      });
+      
+      // Add stealth scripts to avoid detection
+      await page.evaluateOnNewDocument(() => {
       // Override the navigator.webdriver property
       Object.defineProperty(navigator, 'webdriver', {
         get: () => false,
@@ -322,7 +327,8 @@ export default async function handler(
           Promise.resolve({ state: Intl.DateTimeFormat().resolvedOptions().timeZone } as any) :
           originalQuery(parameters)
       );
-    });
+      });
+    }
     
     await page.setViewport({ width: 1366, height: 768 });
 

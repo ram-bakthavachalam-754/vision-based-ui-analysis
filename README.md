@@ -2,6 +2,23 @@
 
 A powerful web application that uses AI vision to analyze web pages. Built with Next.js and deployable to Vercel.
 
+## ⚠️ Important Legal Notice
+
+**For Educational and Personal Use Only**
+
+This tool is intended for:
+- ✅ Testing and analyzing websites you own or have permission to access
+- ✅ Personal research and educational purposes
+- ✅ Legitimate accessibility testing
+
+**You are responsible for:**
+- ❌ Respecting robots.txt and website Terms of Service
+- ❌ Not using this for scraping, data harvesting, or unauthorized access
+- ❌ Not overwhelming servers with excessive requests
+- ❌ Not bypassing paywalls, authentication, or access controls
+
+**By using this tool, you agree to use it responsibly and legally. The authors are not responsible for misuse.**
+
 ## ✨ Perfect for Public Deployment
 
 This app uses a **"Bring Your Own API Key" (BYOK)** model - users provide their own OpenAI API keys, so you can deploy it publicly at **zero cost** for OpenAI usage!
