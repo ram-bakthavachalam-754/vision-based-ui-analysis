@@ -276,13 +276,75 @@ export default async function handler(
     });
 
     const page = await browser.newPage();
+    
+    // Set realistic user agent
+    await page.setUserAgent(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    );
+    
+    // Add extra headers to appear more like a real browser
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Upgrade-Insecure-Requests': '1',
+    });
+    
+    // Add stealth scripts to avoid detection
+    await page.evaluateOnNewDocument(() => {
+      // Override the navigator.webdriver property
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+      });
+      
+      // Override the plugins property
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5],
+      });
+      
+      // Override the languages property
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['en-US', 'en'],
+      });
+      
+      // Override the chrome property
+      (window as any).chrome = {
+        runtime: {},
+      };
+      
+      // Override permissions
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = (parameters: any) => (
+        parameters.name === 'notifications' ?
+          Promise.resolve({ state: Intl.DateTimeFormat().resolvedOptions().timeZone } as any) :
+          originalQuery(parameters)
+      );
+    });
+    
     await page.setViewport({ width: 1366, height: 768 });
 
     sendStatus(`🌐 Navigating to ${url}...`);
-    await page.goto(url, { 
-      waitUntil: 'networkidle0',
-      timeout: 30000 
-    });
+    
+    try {
+      await page.goto(url, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
+    } catch (error: any) {
+      // If networkidle0 times out, try with domcontentloaded
+      if (error.message.includes('timeout') || error.message.includes('Navigation')) {
+        sendStatus('⚠️ Page taking long to load, trying alternative method...');
+        await page.goto(url, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 30000 
+        });
+      } else {
+        throw error;
+      }
+    }
     
     await delay(2000);
 
