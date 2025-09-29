@@ -135,10 +135,10 @@ export default function Home() {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              🔍 Vision-Based Page Verification
+              AI based analysis of web pages
             </h1>
             <p className="text-lg text-gray-600">
-              AI-powered analysis of web pages with smart scrolling and full-page screenshots
+              This tool uses AI to analyze web pages and provide a response to a prompt.
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export default function Home() {
 
               <div>
                 <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
-                  Website URL
+                  Provide the URL of the page you want to analyze
                 </label>
                 <input
                   type="url"
@@ -208,7 +208,7 @@ export default function Home() {
 
               <div>
                 <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Prompt
+                  What is your question about the page?
                 </label>
                 <textarea
                   id="prompt"
