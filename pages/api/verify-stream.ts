@@ -255,7 +255,7 @@ export default async function handler(
       browserArgs = ['--no-sandbox', '--disable-setuid-sandbox'];
     } else {
       // Production - use @sparticuz/chromium
-      executablePath = await chromium.executablePath('/tmp/chromium');
+      executablePath = await chromium.executablePath();
       browserArgs = [
         ...chromium.args,
         '--no-sandbox',
