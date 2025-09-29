@@ -1,0 +1,10 @@
+# Files to ignore during Vercel deployment
+class_schedule_extractor.py
+__pycache__
+*.pyc
+.env
+.env.local
+.env.example
+README.md
+QUICK_START.md
+DEPLOYMENT.md
