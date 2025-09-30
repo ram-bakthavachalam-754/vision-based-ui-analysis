@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import chromium from '@sparticuz/chromium';
+import chromium from 'chrome-aws-lambda';
 import puppeteer from 'puppeteer-core';
 import { OpenAI } from 'openai';
 
@@ -245,7 +245,7 @@ export default async function handler(
       ];
       
       const fs = require('fs');
-      executablePath = await chromium.executablePath();
+      executablePath = await chromium.executablePath;
       for (const path of localChromePaths) {
         if (fs.existsSync(path)) {
           executablePath = path;
@@ -254,49 +254,9 @@ export default async function handler(
       }
       browserArgs = ['--no-sandbox', '--disable-setuid-sandbox'];
     } else {
-      // Production - use @sparticuz/chromium with proper setup
-      executablePath = await chromium.executablePath();
-      
-      // Chromium args optimized for serverless
-      browserArgs = [
-        '--autoplay-policy=user-gesture-required',
-        '--disable-background-networking',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-breakpad',
-        '--disable-client-side-phishing-detection',
-        '--disable-component-update',
-        '--disable-default-apps',
-        '--disable-dev-shm-usage',
-        '--disable-domain-reliability',
-        '--disable-extensions',
-        '--disable-features=AudioServiceOutOfProcess',
-        '--disable-hang-monitor',
-        '--disable-ipc-flooding-protection',
-        '--disable-notifications',
-        '--disable-offer-store-unmasked-wallet-cards',
-        '--disable-popup-blocking',
-        '--disable-print-preview',
-        '--disable-prompt-on-repost',
-        '--disable-renderer-backgrounding',
-        '--disable-setuid-sandbox',
-        '--disable-speech-api',
-        '--disable-sync',
-        '--hide-scrollbars',
-        '--ignore-gpu-blacklist',
-        '--metrics-recording-only',
-        '--mute-audio',
-        '--no-default-browser-check',
-        '--no-first-run',
-        '--no-pings',
-        '--no-sandbox',
-        '--no-zygote',
-        '--password-store=basic',
-        '--use-gl=swiftshader',
-        '--use-mock-keychain',
-        '--single-process',
-        '--disable-gpu',
-      ];
+      // Production - use chrome-aws-lambda (proven to work on Vercel)
+      executablePath = await chromium.executablePath;
+      browserArgs = chromium.args;
     }
     
     browser = await puppeteer.launch({
@@ -394,10 +354,11 @@ export default async function handler(
     
     const screenshotBuffer = await page.screenshot({ 
       fullPage: true,
-      type: 'png'
-    });
+      type: 'png',
+      encoding: 'base64'
+    }) as string;
     
-    const screenshotBase64 = screenshotBuffer.toString('base64');
+    const screenshotBase64 = screenshotBuffer;
     sendStatus(`📸 Screenshot captured (${screenshotBase64.length} chars)`);
 
     sendStatus('🤖 Analyzing page with AI...');
