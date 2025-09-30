@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
+import puppeteer from 'puppeteer';
 import { OpenAI } from 'openai';
 
 export const config = {
@@ -230,40 +229,19 @@ export default async function handler(
 
     sendStatus('🚀 Launching browser...');
     
-    const isDev = process.env.NODE_ENV === 'development';
-    
-    let executablePath: string;
-    let browserArgs: string[];
-    
-    if (isDev) {
-      // Local development - use local Chrome
-      const localChromePaths = [
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        '/usr/bin/google-chrome',
-        '/usr/bin/chromium-browser',
-      ];
-      
-      const fs = require('fs');
-      executablePath = await chromium.executablePath;
-      for (const path of localChromePaths) {
-        if (fs.existsSync(path)) {
-          executablePath = path;
-          break;
-        }
-      }
-      browserArgs = ['--no-sandbox', '--disable-setuid-sandbox'];
-    } else {
-      // Production - use chrome-aws-lambda (proven to work on Vercel)
-      executablePath = await chromium.executablePath;
-      browserArgs = chromium.args;
-    }
-    
+    // Use puppeteer with bundled Chromium (works reliably on Vercel)
     browser = await puppeteer.launch({
-      args: browserArgs,
-      defaultViewport: { width: 1366, height: 768 },
-      executablePath,
       headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+      ],
       ignoreHTTPSErrors: true,
     });
 
