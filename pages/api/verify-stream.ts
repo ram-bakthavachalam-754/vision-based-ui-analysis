@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium-min';
 import { OpenAI } from 'openai';
 
 export const config = {
@@ -229,20 +230,31 @@ export default async function handler(
 
     sendStatus('🚀 Launching browser...');
     
-    // Use puppeteer with bundled Chromium (works reliably on Vercel)
+    // Use @sparticuz/chromium-min optimized for serverless
+    const isLocal = process.env.NODE_ENV === 'development';
+    
     browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu',
-      ],
-      ignoreHTTPSErrors: true,
+      args: isLocal 
+        ? ['--no-sandbox']
+        : [
+            ...chromium.args,
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--single-process',
+            '--disable-gpu',
+          ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: isLocal
+        ? process.platform === 'win32'
+          ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+          : process.platform === 'darwin'
+          ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+          : '/usr/bin/google-chrome'
+        : await chromium.executablePath(
+            'https://github.com/Sparticuz/chromium/releases/download/v131.0.0/chromium-v131.0.0-pack.tar'
+          ),
+      headless: chromium.headless,
     });
 
     const page = await browser.newPage();
