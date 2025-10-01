@@ -203,7 +203,3 @@ const screenshotBuffer = await page.screenshot({
 ## License
 
 MIT
-
-## Credits
-
-Inspired by the Playwright-based `class_schedule_extractor.py` script, adapted for serverless deployment with Puppeteer.
