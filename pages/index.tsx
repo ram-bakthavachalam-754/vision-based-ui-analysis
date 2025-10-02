@@ -6,6 +6,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [saveApiKey, setSaveApiKey] = useState(false);
+  const [maxScrollHeight, setMaxScrollHeight] = useState('2400'); // Default: 3x viewport (800px x 3)
   const [loading, setLoading] = useState(false);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
   const [result, setResult] = useState<{
@@ -71,7 +72,12 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, prompt, apiKey }),
+        body: JSON.stringify({ 
+          url, 
+          prompt, 
+          apiKey,
+          maxScrollHeight: maxScrollHeight ? parseInt(maxScrollHeight) : undefined
+        }),
       });
 
       if (!response.ok) {
@@ -204,6 +210,25 @@ export default function Home() {
                   required
                   disabled={loading}
                 />
+              </div>
+
+              <div>
+                <label htmlFor="maxScrollHeight" className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Scroll Height (pixels)
+                </label>
+                <input
+                  type="number"
+                  id="maxScrollHeight"
+                  value={maxScrollHeight}
+                  onChange={(e) => setMaxScrollHeight(e.target.value)}
+                  placeholder="2400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                  disabled={loading}
+                  min="500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Default: 2400px (~3x viewport height). Prevents infinite scrolling. Clear field for full-page capture.
+                </p>
               </div>
 
               <div>
