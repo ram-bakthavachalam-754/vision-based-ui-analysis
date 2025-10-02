@@ -428,7 +428,7 @@ export default async function handler(
       ? `This screenshot shows the top ${maxScrollHeight}px of the webpage (limited capture to avoid infinite scroll issues). The visible portion was scrolled through and collapsible content was expanded.`
       : `This is a FULL-PAGE screenshot showing ALL content on the page, including content that was below the fold. The page was systematically scrolled and all collapsible content was expanded before taking this screenshot.`;
     
-    const response = await openai.chat.completions.create({
+      const response = await openai.chat.completions.create({
       model: 'gpt-4.1-2025-04-14',
       messages: [
         {
@@ -447,7 +447,8 @@ export default async function handler(
           ]
         }
       ],
-      max_tokens: 2000
+      max_tokens: 2000,
+      temperature: 0.1
     });
 
     const analysis = response.choices[0]?.message?.content || 'No analysis provided';
